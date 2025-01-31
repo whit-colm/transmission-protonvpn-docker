@@ -1,0 +1,66 @@
+services:
+  # 🛡️ Gluetun VPN Container (ProtonVPN via WireGuard)
+  gluetun:
+    image: ghcr.io/qdm12/gluetun:latest
+    container_name: gluetun
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      # 🛠️ VPN Configuration (WireGuard)
+      - VPN_SERVICE_PROVIDER=custom
+      - VPN_TYPE=wireguard
+      - WIREGUARD_ENDPOINT_IP=<YOUR_WIREGUARD_SERVER_IP>  # Get this from your ProtonVPN config
+      - WIREGUARD_ENDPOINT_PORT=<YOUR_WIREGUARD_SERVER_PORT>  # Get this from your ProtonVPN config
+      - WIREGUARD_PUBLIC_KEY=<YOUR_WIREGUARD_PUBLIC_KEY>  # From ProtonVPN
+      - WIREGUARD_PRIVATE_KEY=<YOUR_WIREGUARD_PRIVATE_KEY>  # From ProtonVPN (KEEP THIS SECRET!)
+      - WIREGUARD_ADDRESSES=<YOUR_WIREGUARD_CLIENT_IP>/32  # e.g., 10.x.x.x/32
+      - TZ=<YOUR_TIMEZONE>  # e.g., Europe/London
+    ports:
+      - 8080:8080/tcp  # qBittorrent Web UI
+
+  # 🔄 qBittorrent (Torrent Client)
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    restart: unless-stopped
+    volumes:
+      - ./qbittorrent:/config  # Stores qBittorrent settings & torrents
+      - <YOUR_DOWNLOAD_PATH>:/downloads  # Replace with your local downloads directory
+    environment:
+      - PUID=1000  # Change if needed
+      - PGID=1000  # Change if needed
+      - TZ=<YOUR_TIMEZONE>  # e.g., Europe/London
+      - WEBUI_PORT=8080
+      - TORRENTING_PORT=6881
+    network_mode: "service:gluetun"
+    depends_on:
+      gluetun:
+        condition: service_healthy
+
+  # 🌍 qBittorrent NAT Port Mapping (Auto-Port Forwarding)
+  qbittorrent-natmap:
+    image: ghcr.io/soxfor/qbittorrent-natmap:latest
+    container_name: qbittorrent-natmap
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro  # Allows Docker interaction
+    environment:
+      - TZ=<YOUR_TIMEZONE>
+      - QBITTORRENT_SERVER=<YOUR_WIREGUARD_CLIENT_IP>  # Same as WIREGUARD_ADDRESSES
+      - QBITTORRENT_PORT=8080
+      - QBITTORRENT_USER=<YOUR_QBITTORRENT_USERNAME>
+      - QBITTORRENT_PASS=<YOUR_QBITTORRENT_PASSWORD>
+      - VPN_GATEWAY=<YOUR_VPN_GATEWAY_IP>  # Typically 10.x.x.1
+      - VPN_CT_NAME=gluetun
+      - VPN_IF_NAME=tun0
+      - CHECK_INTERVAL=300
+      - NAT_LEASE_LIFETIME=300
+    network_mode: "service:gluetun"
+    depends_on:
+      qbittorrent:
+        condition: service_started
+      gluetun:
+        condition: service_healthy
