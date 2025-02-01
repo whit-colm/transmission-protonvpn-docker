@@ -35,7 +35,7 @@ brew install docker-compose
 3️⃣ Clone the Repository
 ```
 
-git clone https://github.com/YOUR_GITHUB_USERNAME/qbittorrent-protonvpn-docker.git
+git clone https://github.com/torrentsec/qbittorrent-protonvpn-docker.git
 cd qbittorrent-protonvpn-docker
 ```
 4️⃣ Get Your ProtonVPN WireGuard Credentials
