@@ -1,5 +1,6 @@
 # Ignore environment variables (credentials, API keys)
 .env
+config.toml
 
 # Ignore VPN credentials and config files
 auth.txt
