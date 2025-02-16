@@ -1,5 +1,5 @@
-
 # 🛡️ qBittorrent + ProtonVPN (WireGuard) in Docker (macOS)
+
 **Securely run qBittorrent in Docker with ProtonVPN (WireGuard) using Gluetun, with full VPN routing and automatic port forwarding.**
 
 [![Docker](https://badgen.net/badge/docker/compose/blue)](https://docs.docker.com/compose/)
@@ -7,16 +7,14 @@
 
 ---
 
-## Table of Contents
+## 📌 Table of Contents
 1. [Overview](#overview)
 2. [Features](#features)
 3. [Prerequisites](#prerequisites)
 4. [Installation Guide](#installation-guide)
-   - [Install Docker Desktop for Mac](#install-docker-desktop-for-mac)
-   - [Install Docker Compose](#install-docker-compose)
+   - [Install Docker](#install-docker)
    - [Clone the Repository](#clone-the-repository)
-   - [Get Your ProtonVPN WireGuard Credentials](#get-your-protonvpn-wireguard-credentials)
-   - [Edit docker-compose.yml](#edit-docker-composeyml)
+   - [Set Up the `.env` File](#set-up-the-env-file)
    - [Start the Containers](#start-the-containers)
 5. [Accessing qBittorrent Web UI](#accessing-qbittorrent-web-ui)
 6. [Troubleshooting](#troubleshooting)
@@ -26,10 +24,13 @@
 
 ---
 
-## Overview
+## 🔹 Overview
 This setup ensures **qBittorrent only connects through ProtonVPN (WireGuard)**, preventing leaks and enhancing security. It also includes **automatic port forwarding** for better torrent speeds.
 
-### Features
+
+---
+
+## ✅ Features
 - **100% VPN Enforced** – No leaks, qBittorrent only runs inside the VPN.
 - **Automatic Port Forwarding** – Ensures better speeds and connectivity.
 - **Easy Local Web UI** – Access qBittorrent at [`http://localhost:8080`](http://localhost:8080).
@@ -38,78 +39,85 @@ This setup ensures **qBittorrent only connects through ProtonVPN (WireGuard)**, 
 
 ---
 
-## Prerequisites
-- Docker Desktop for Mac
-- Docker Compose (bundled with Docker Desktop)
-- ProtonVPN account with WireGuard configuration
+## 🔧 Prerequisites
+- **Docker Desktop** (macOS/Windows/Linux)
+- **Docker Compose** (bundled with Docker Desktop)
+- **ProtonVPN account** (Plus or Visionary required for WireGuard support)
 
 ---
 
-## Installation Guide
+## 📂 Installation Guide
 
-### Install Docker Desktop for Mac
+### **1️⃣ Install Docker**
 Download and install **Docker Desktop** from [here](https://www.docker.com/products/docker-desktop/).  
-- Ensure Docker is **running** before proceeding.
+Ensure Docker is **running** before proceeding.
 
-### Install Docker Compose (If Not Already Installed)
-Docker Compose is bundled with **Docker Desktop** for macOS, but if you need to install it separately:
-```sh
-brew install docker-compose
-```
+---
 
-### Clone the Repository
+### **2️⃣ Clone the Repository**
 ```sh
-git clone https://github.com/torrentsec/qbittorrent-protonvpn-docker.git
+git clone https://github.com/YOUR_GITHUB_USERNAME/qbittorrent-protonvpn-docker.git
 cd qbittorrent-protonvpn-docker
 ```
 
-### Get Your ProtonVPN WireGuard Credentials
-- Log in to ProtonVPN
-- Go to WireGuard Configuration → Select a server
-- Download the WireGuard config file
-- Extract the following details:
-  - `WIREGUARD_ENDPOINT_IP`
-  - `WIREGUARD_PUBLIC_KEY`
-  - `WIREGUARD_PRIVATE_KEY`
-  - `WIREGUARD_ADDRESSES`
+---
 
-### Edit docker-compose.yml
-Open the file in a text editor (nano, vi, or VS Code) and replace `<PLACEHOLDER>` values:
-```yaml
-- WIREGUARD_ENDPOINT_IP=<YOUR_WIREGUARD_SERVER_IP>
-- WIREGUARD_PUBLIC_KEY=<YOUR_WIREGUARD_PUBLIC_KEY>
-- WIREGUARD_PRIVATE_KEY=<YOUR_WIREGUARD_PRIVATE_KEY>  # Keep this secret!
-- WIREGUARD_ADDRESSES=<YOUR_WIREGUARD_CLIENT_IP>/24
+### **3️⃣ Set Up the `.env` File**
+This project uses an `.env` file for **sensitive configuration values** (which are ignored by Git for security).  
+
+#### **Create Your `.env` File**
+```sh
+cp .env.example .env
+nano .env
 ```
 
-### Start the Containers
+#### **Fill in the Following Variables**
+```ini
+WIREGUARD_PRIVATE_KEY=your_private_key_here
+SERVER_COUNTRIES="United Kingdom"
+SERVER_CITIES="London"
+
+PUID=1000
+PGID=1000
+TZ=Europe/London
+
+GLUETUN_USER=your_admin_username
+GLUETUN_PASS=your_admin_password
+
+GSP_GTN_API_KEY=your_random_api_key_here
+GSP_QBITTORRENT_PORT=your_forwarded_port_here
+```
+Save and close (`CTRL + X`, then `Y`, then `ENTER`).
+
+---
+
+### **4️⃣ Start the Containers**
 ```sh
 docker-compose up -d
 ```
-🚀 qBittorrent is now running securely through ProtonVPN!
+🚀 **qBittorrent is now running securely through ProtonVPN!**
 
 ---
 
-## Accessing qBittorrent Web UI
-
-Once running, open:
-📌 [http://localhost:8080](http://localhost:8080)  
-(Default username: admin, password: adminadmin)
+## 🔗 Accessing qBittorrent Web UI
+Once running, open:  
+📌 **[http://localhost:8080](http://localhost:8080)**  
+_(Default username: admin, password: adminadmin)_
 
 ---
 
-## Troubleshooting
+## 🛠️ Troubleshooting
 
-### Check if VPN is Running
+### **Check if VPN is Running**
 ```sh
 docker ps
 ```
-If gluetun isn’t running, restart everything:
+If Gluetun isn’t running, restart everything:
 ```sh
 docker-compose down && docker-compose up -d
 ```
 
-### Verify qBittorrent is Using VPN
+### **Verify qBittorrent is Using VPN**
 ```sh
 docker exec -it qbittorrent sh
 curl ifconfig.me
@@ -117,26 +125,27 @@ curl ifconfig.me
 ✅ If the IP matches ProtonVPN, it’s working.  
 ❌ If it shows your real IP, something is wrong.
 
-### Check Logs for Errors
+### **Check Logs for Errors**
 ```sh
 docker logs -f gluetun
 ```
-Look for AUTH_FAILED or connection issues.
+Look for **AUTH_FAILED** or connection issues.
 
 ---
 
-## License
-
-This project is licensed under the MIT License – see the LICENSE file for details.
-
----
-
-## Contributing
-
-Feel free to submit issues, suggestions, or pull requests!
+## 📜 License
+This project is licensed under the **MIT License** – see the LICENSE file for details.
 
 ---
 
-## Support & Feedback
+## 🤝 Contributing
+Contributions are welcome! If you have improvements or feedback, feel free to submit an issue or pull request.
 
-If you found this helpful, give it a ⭐ star and share feedback! 😊
+---
+
+## 💬 Support & Feedback
+- If you found this helpful, give it a ⭐ star on GitHub!  
+- Feedback & suggestions are always welcome.  
+
+---
+
