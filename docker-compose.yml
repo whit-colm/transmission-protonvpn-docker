@@ -1,5 +1,7 @@
+version: "3.9"
+
 services:
-  # 🛡️ Gluetun VPN Container (ProtonVPN via WireGuard)
+  # 🛡️ VPN Layer: Gluetun (ProtonVPN via WireGuard)
   gluetun:
     image: ghcr.io/qdm12/gluetun:latest
     container_name: gluetun
@@ -12,46 +14,57 @@ services:
       - net.ipv6.conf.all.disable_ipv6=1  # Disable IPv6 (recommended for VPN security)
 
     environment:
-      - VPN_SERVICE_PROVIDER=protonvpn  # Using ProtonVPN as the provider
-      - VPN_TYPE=wireguard  # WireGuard for faster, more secure VPN
-      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}  # Private key for VPN authentication
-      - SERVER_COUNTRIES=${SERVER_COUNTRIES:-United Kingdom}  # Default country (UK)
-      - SERVER_CITIES=${SERVER_CITIES:-London}  # Default city (London)
-      - VPN_PORT_FORWARDING=on  # Enable port forwarding (required for better torrenting)
-      - TZ=${TZ:-Europe/London}  # Timezone configuration
+      # 🌍 VPN Provider & Connection Settings
+      - VPN_SERVICE_PROVIDER=protonvpn  # Choose ProtonVPN as the provider
+      - VPN_TYPE=wireguard  # Use WireGuard for better security and performance
+      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}  # Your WireGuard private key (must be set in .env)
+      - SERVER_COUNTRIES=${SERVER_COUNTRIES:-United Kingdom}  # Set default VPN country (fallback: UK)
+      - SERVER_CITIES=${SERVER_CITIES:-London}  # Set default VPN city (fallback: London)
+      - VPN_PORT_FORWARDING=on  # Enable automatic port forwarding for better torrenting
+      - TZ=${TZ:-Europe/London}  # Set timezone for logging & container sync
 
-      # 🔒 Secure the Gluetun control API (used for dynamic port forwarding updates)
-      - HTTP_CONTROL_SERVER=on
-      - HTTP_CONTROL_SERVER_USER=${GLUETUN_USER:-admin}  # Default user (change this!)
-      - HTTP_CONTROL_SERVER_PASSWORD=${GLUETUN_PASS:-securepassword}  # Default password (change this!)
+      # 🔒 Secure the Gluetun Control API (used for dynamic port forwarding updates)
+      - HTTP_CONTROL_SERVER=on  # Enables the control API for managing Gluetun
+      - HTTP_CONTROL_SERVER_AUTH_CONFIG_FILEPATH=/gluetun/auth/config.toml  # Explicitly define the auth config file
 
     volumes:
-      - ./gluetun:/gluetun  # Persist Gluetun VPN config (logs, server lists, etc.)
+      - ./gluetun:/gluetun  # Persist VPN configuration (logs, servers, etc.)
+      - ./config.toml:/gluetun/auth/config.toml:ro  # Mount authentication config (READ-ONLY)
 
     ports:
-      - "8080:8080/tcp"  # Maps qBittorrent Web UI (localhost:8080 → container:8080)
+      - "8080:8080/tcp"  # Exposes qBittorrent Web UI via VPN (localhost:8080 → container:8080)
 
-  # 🔄 qBittorrent - Torrent Client running inside VPN
+  # 🔄 Torrent Client: qBittorrent (Inside VPN)
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
     restart: unless-stopped
-    network_mode: "service:gluetun"  # Routes all traffic through the VPN container
+    network_mode: "service:gluetun"  # Ensures all traffic goes through the VPN
     depends_on:
       gluetun:
-        condition: service_healthy  # Ensures VPN is active before qBittorrent starts
+        condition: service_healthy  # Only start qBittorrent when VPN is up
 
     environment:
-      - PUID=${PUID:-1000}  # User ID (set to match your system user)
-      - PGID=${PGID:-1000}  # Group ID (set to match your system user)
-      - TZ=${TZ:-Europe/London}  # Timezone
-      - WEBUI_PORT=8080  # Port for the Web UI (inside the container)
-      - QBITTORRENT_INTERFACE=tun0  # Ensures qBittorrent only uses VPN
-      - DOCKER_MODS=ghcr.io/t-anc/gsp-qbittorent-gluetun-sync-port-mod:main  # Mod for automatic port sync
-      - GSP_GTN_API_KEY=${GSP_GTN_API_KEY:-randomapikey}  # API key for port forwarding
-      - GSP_QBITTORRENT_PORT=${GSP_QBITTORRENT_PORT:-53764}  # Port used for torrenting
-      - GSP_MINIMAL_LOGS=false  # Enable full logs for debugging
+      # 🔧 User Permissions (Set based on your system user/group)
+      - PUID=${PUID:-1000}  # Set the user ID
+      - PGID=${PGID:-1000}  # Set the group ID
+      - TZ=${TZ:-Europe/London}  # Set timezone
+
+      # 🌐 qBittorrent Settings
+      - WEBUI_PORT=8080  # Set the internal WebUI port (unchanged)
+      - QBITTORRENT_INTERFACE=tun0  # Ensures qBittorrent only uses VPN (important for security)
+
+      # 🔄 Port Forwarding Mod (Syncs qBittorrent with Gluetun)
+      - DOCKER_MODS=ghcr.io/t-anc/gsp-qbittorent-gluetun-sync-port-mod:main
+      - GSP_GTN_API_KEY=${GSP_GTN_API_KEY:-randomapikey}  # API key for port forwarding updates
+      - GSP_QBITTORRENT_PORT=${GSP_QBITTORRENT_PORT:-53764}  # Torrenting port (auto-updated by Gluetun)
+      - GSP_MINIMAL_LOGS=false  # Enables full logs for debugging purposes
 
     volumes:
-      - ./qbittorrent:/config  # Stores qBittorrent settings & torrents
-      - <YOUR_DOWNLOAD_PATH>:/downloads  # Replace with your local downloads directory
+      - ./qbittorrent:/config  # Stores qBittorrent settings & session info
+      - /Users/YOUR_USERNAME/Seeding:/downloads  # Replace with your local downloads directory
+
+volumes:
+  gluetun-config:
+  qbittorrent-config:
+  downloads:
