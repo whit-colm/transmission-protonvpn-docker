@@ -5,62 +5,53 @@ services:
     container_name: gluetun
     restart: unless-stopped
     cap_add:
-      - NET_ADMIN
+      - NET_ADMIN  # Required for VPN networking (allows container to modify network settings)
     devices:
-      - /dev/net/tun:/dev/net/tun
-    environment:
-      # 🛠️ VPN Configuration (WireGuard)
-      - VPN_SERVICE_PROVIDER=custom
-      - VPN_TYPE=wireguard
-      - WIREGUARD_ENDPOINT_IP=<YOUR_WIREGUARD_SERVER_IP>  # Get this from your ProtonVPN config
-      - WIREGUARD_ENDPOINT_PORT=<YOUR_WIREGUARD_SERVER_PORT>  # Get this from your ProtonVPN config
-      - WIREGUARD_PUBLIC_KEY=<YOUR_WIREGUARD_PUBLIC_KEY>  # From ProtonVPN
-      - WIREGUARD_PRIVATE_KEY=<YOUR_WIREGUARD_PRIVATE_KEY>  # From ProtonVPN (KEEP THIS SECRET!)
-      - WIREGUARD_ADDRESSES=<YOUR_WIREGUARD_CLIENT_IP>/32  # e.g., 10.x.x.x/32
-      - TZ=<YOUR_TIMEZONE>  # e.g., Europe/London
-    ports:
-      - 8080:8080/tcp  # qBittorrent Web UI
+      - /dev/net/tun:/dev/net/tun  # Enables the VPN tunnel for secure traffic routing
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1  # Disable IPv6 (recommended for VPN security)
 
-  # 🔄 qBittorrent (Torrent Client)
+    environment:
+      - VPN_SERVICE_PROVIDER=protonvpn  # Using ProtonVPN as the provider
+      - VPN_TYPE=wireguard  # WireGuard for faster, more secure VPN
+      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}  # Private key for VPN authentication
+      - SERVER_COUNTRIES=${SERVER_COUNTRIES:-United Kingdom}  # Default country (UK)
+      - SERVER_CITIES=${SERVER_CITIES:-London}  # Default city (London)
+      - VPN_PORT_FORWARDING=on  # Enable port forwarding (required for better torrenting)
+      - TZ=${TZ:-Europe/London}  # Timezone configuration
+
+      # 🔒 Secure the Gluetun control API (used for dynamic port forwarding updates)
+      - HTTP_CONTROL_SERVER=on
+      - HTTP_CONTROL_SERVER_USER=${GLUETUN_USER:-admin}  # Default user (change this!)
+      - HTTP_CONTROL_SERVER_PASSWORD=${GLUETUN_PASS:-securepassword}  # Default password (change this!)
+
+    volumes:
+      - ./gluetun:/gluetun  # Persist Gluetun VPN config (logs, server lists, etc.)
+
+    ports:
+      - "8080:8080/tcp"  # Maps qBittorrent Web UI (localhost:8080 → container:8080)
+
+  # 🔄 qBittorrent - Torrent Client running inside VPN
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
     restart: unless-stopped
+    network_mode: "service:gluetun"  # Routes all traffic through the VPN container
+    depends_on:
+      gluetun:
+        condition: service_healthy  # Ensures VPN is active before qBittorrent starts
+
+    environment:
+      - PUID=${PUID:-1000}  # User ID (set to match your system user)
+      - PGID=${PGID:-1000}  # Group ID (set to match your system user)
+      - TZ=${TZ:-Europe/London}  # Timezone
+      - WEBUI_PORT=8080  # Port for the Web UI (inside the container)
+      - QBITTORRENT_INTERFACE=tun0  # Ensures qBittorrent only uses VPN
+      - DOCKER_MODS=ghcr.io/t-anc/gsp-qbittorent-gluetun-sync-port-mod:main  # Mod for automatic port sync
+      - GSP_GTN_API_KEY=${GSP_GTN_API_KEY:-randomapikey}  # API key for port forwarding
+      - GSP_QBITTORRENT_PORT=${GSP_QBITTORRENT_PORT:-53764}  # Port used for torrenting
+      - GSP_MINIMAL_LOGS=false  # Enable full logs for debugging
+
     volumes:
       - ./qbittorrent:/config  # Stores qBittorrent settings & torrents
       - <YOUR_DOWNLOAD_PATH>:/downloads  # Replace with your local downloads directory
-    environment:
-      - PUID=1000  # Change if needed
-      - PGID=1000  # Change if needed
-      - TZ=<YOUR_TIMEZONE>  # e.g., Europe/London
-      - WEBUI_PORT=8080
-      - TORRENTING_PORT=6881
-    network_mode: "service:gluetun"
-    depends_on:
-      gluetun:
-        condition: service_healthy
-
-  # 🌍 qBittorrent NAT Port Mapping (Auto-Port Forwarding)
-  qbittorrent-natmap:
-    image: ghcr.io/soxfor/qbittorrent-natmap:latest
-    container_name: qbittorrent-natmap
-    restart: unless-stopped
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro  # Allows Docker interaction
-    environment:
-      - TZ=<YOUR_TIMEZONE>
-      - QBITTORRENT_SERVER=<YOUR_WIREGUARD_CLIENT_IP>  # Same as WIREGUARD_ADDRESSES
-      - QBITTORRENT_PORT=8080
-      - QBITTORRENT_USER=<YOUR_QBITTORRENT_USERNAME>
-      - QBITTORRENT_PASS=<YOUR_QBITTORRENT_PASSWORD>
-      - VPN_GATEWAY=<YOUR_VPN_GATEWAY_IP>  # Typically 10.x.x.1
-      - VPN_CT_NAME=gluetun
-      - VPN_IF_NAME=tun0
-      - CHECK_INTERVAL=300
-      - NAT_LEASE_LIFETIME=300
-    network_mode: "service:gluetun"
-    depends_on:
-      qbittorrent:
-        condition: service_started
-      gluetun:
-        condition: service_healthy
