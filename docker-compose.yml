@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   # 🛡️ VPN Layer: Gluetun (ProtonVPN via WireGuard)
   gluetun:
