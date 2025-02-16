@@ -1,10 +1,19 @@
-# Ignore system files
+# Ignore environment variables (credentials, API keys)
+.env
+
+# Ignore VPN credentials and config files
+auth.txt
+protonvpn-*.conf
+wireguard.conf
+*.ovpn
+
+# Ignore Docker volumes (optional, if you don't want them included)
+gluetun/
+qbittorrent/
+
+# Ignore macOS system files (if applicable)
 .DS_Store
 
-# Ignore logs & cache
-logs/
+# Ignore logs & temporary files
 *.log
-
-# Ignore temp files
-*.swp
-*.bak
+*.tmp
