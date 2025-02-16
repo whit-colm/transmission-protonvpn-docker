@@ -56,7 +56,7 @@ Ensure Docker is **running** before proceeding.
 
 ### **2️⃣ Clone the Repository**
 ```sh
-git clone https://github.com/YOUR_GITHUB_USERNAME/qbittorrent-protonvpn-docker.git
+git clone https://github.com/torrentsec/qbittorrent-protonvpn-docker.git
 cd qbittorrent-protonvpn-docker
 ```
 
