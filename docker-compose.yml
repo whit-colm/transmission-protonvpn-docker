@@ -18,7 +18,7 @@ services:
   # ──────────────────────────────────────────────────────────────────────
   gluetun:
     image: ghcr.io/qdm12/gluetun:latest  # Uses the latest Gluetun VPN image
-    container_name: gluetun  # Assigns a fixed name to the container
+    container_name: gluetun  # Assigns a fixed name to the container for easy reference
 
     restart: unless-stopped  # Ensures Gluetun restarts if it crashes
 
@@ -40,8 +40,12 @@ services:
       - SERVER_COUNTRIES=${SERVER_COUNTRIES}  # Preferred VPN server country selection
       - SERVER_CITIES=${SERVER_CITIES}  # (Optional) Restrict to a specific city
       - VPN_PORT_FORWARDING=on  # Enables automatic port forwarding (needed for torrenting)
-      - HTTP_CONTROL_SERVER=on  # Enables API access for managing VPN settings
       - TZ=${TZ}  # Sets the timezone for correct timestamps in logs
+      - QBT_WEBUI_ENABLED=true  # ✅ Ensures Web UI is always enabled
+
+      # 🔒 Secure the Gluetun Control API (used for dynamic port forwarding updates)
+      - HTTP_CONTROL_SERVER=on  # Enables the control API for managing Gluetun
+      - HTTP_CONTROL_SERVER_AUTH_CONFIG_FILEPATH=/gluetun/auth/config.toml  # Explicitly define the auth config file
 
     # ─── Persistent Storage ────────────────────────────────────────────
     volumes:
@@ -82,13 +86,18 @@ services:
       - TZ=${TZ}  # Timezone for logs and schedules
       - WEBUI_PORT=8080  # Sets qBittorrent's Web UI to port 8080
       - QBITTORRENT_INTERFACE=tun0  # 🔒 Forces all traffic through VPN interface
-      - QBT_WEBUI_ENABLED=true  # ✅ Ensures Web UI is always enabled
-
+     
+     # 🔄 Port Forwarding Mod (Syncs qBittorrent with Gluetun)
+      - DOCKER_MODS=ghcr.io/t-anc/gsp-qbittorent-gluetun-sync-port-mod:main
+      - GSP_GTN_API_KEY=${GSP_GTN_API_KEY:-randomapikey}  # API key for port forwarding updates
+      - GSP_QBITTORRENT_PORT=${GSP_QBITTORRENT_PORT:-53764}  # Torrenting port (auto-updated by Gluetun)
+      - GSP_MINIMAL_LOGS=false  # Enables full logs for debugging purposes
     # ─── Persistent Storage ────────────────────────────────────────────
+    
     volumes:
-      - qbittorrent-config:/config  # Stores qBittorrent settings persistently
+      - ./qbittorrent:/config   # Stores qBittorrent settings persistently
       - ./incomplete:/incomplete  # ⚡ Temporary download location (reduces SSD wear)
-      - ./downloads:/downloads  # ✅ Completed torrents move here
+      - ./downloads  # ✅ Completed torrents move here
 
     # ─── Performance Optimization ──────────────────────────────────────
     ulimits:
