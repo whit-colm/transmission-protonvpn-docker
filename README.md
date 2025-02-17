@@ -124,13 +124,13 @@ Once running, open:\
 
 ## 🛡️ Security & Best Practices
 
-1. **Keep **``** Private**
+1. **Keep **`.env`** Private**
 
-   - The `.gitignore` file **already prevents **``** from being uploaded to GitHub.**
+   - The `.gitignore` file **already prevents **`.env`** from being uploaded to GitHub.**
 
 2. **Use a Strong Password for Gluetun API**
 
-   - **Modify **``** in **`` to prevent unauthorized API access.
+   - **Modify **`GLUETUN_PASS`** in **`.env` to prevent unauthorized API access.
 
 3. **Verify VPN Connectivity Before Torrenting**
 
