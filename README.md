@@ -104,33 +104,7 @@ Save and close (`CTRL + X`, then `Y`, then `ENTER`).
 
 ---
 
-### **4️⃣ Configure Authentication**
-
-Gluetun requires an **authentication configuration file (**``**)** to secure the **port forwarding API**.
-
-#### **Create **``
-
-```sh
-cp config.template.toml config.toml
-nano config.toml
-```
-
-#### **Modify **``
-
-```toml
-[[roles]]
-name = "qbittorrent"
-routes = ["GET /v1/openvpn/portforwarded"]
-auth = "basic"
-username = "your_admin_username"
-password = "your_admin_password"
-```
-
-🔷 Ensure `username` and `password` match what you set in `.env`.
-
----
-
-### **5️⃣ Start the Containers**
+### **4️⃣ Start the Containers**
 
 ```sh
 docker-compose up -d
