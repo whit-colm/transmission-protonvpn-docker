@@ -40,6 +40,8 @@ It also **automates port forwarding** for better torrent speeds and **runs every
 - **🌐 Local Web UI Access** – Easily control torrents via [`http://localhost:8080`](http://localhost:8080).
 - **📺 Fully Containerized** – Uses Docker for easy deployment, updates, and isolation.
 - **🔄 Resilient Setup** – Containers **auto-restart** if anything crashes.
+- - Uses **separate storage** for incomplete and completed torrents
+- **Automatically updates containers using Watchtower** 🛠️
 
 ---
 
