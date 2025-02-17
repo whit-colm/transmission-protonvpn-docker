@@ -71,11 +71,11 @@ cd qbittorrent-protonvpn-docker
 
 ---
 
-### **3️⃣ Set Up the **``** File**
+### **3️⃣ Set Up the **`.env`** File**
 
 This project uses an `.env` file to store **sensitive configuration values** (which are ignored by Git for security).
 
-#### **Create Your **``** File**
+#### **Create Your **`.env`** File**
 
 ```sh
 cp .env.example .env
