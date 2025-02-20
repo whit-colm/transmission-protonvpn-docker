@@ -118,7 +118,9 @@ docker-compose up -d
 
 Once running, open:\
 📌 [**http://localhost:8080**](http://localhost:8080)\
-*(Default username: admin, password: adminadmin)*
+*(Default username: admin, password: check console for temporarily password)*
+
+Make sure to change your web UI password after the first login. Otherwise, the password will be randomly generated after every container restart.
 
 ---
 
