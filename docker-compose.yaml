@@ -76,6 +76,21 @@ services:
       - TRANSMISSION_RPC_PASSWORD=${TMSN_PASS}
     restart: "unless-stopped"
 
+  webdav:
+    image: hacdias/webdav:latest
+    container_name: webdav
+    restart: unless-stopped
+    ports:
+      - "${WEBDAV_PORT:-8080}:8080"
+    volumes:
+      - ${TMSN_TORRENTS_DIR}:/data:ro
+      - ./webdav-config.yml:/config.yml:ro
+    environment:
+      - USERNAME=${TMSN_USER}
+      - PASSWORD=${TMSN_PASS}
+    user: "${PUID}:${PGID}"
+    command: --config /config.yml
+
 volumes:
   gluetun-config:
   transmission-config:

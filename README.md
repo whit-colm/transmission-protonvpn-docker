@@ -52,14 +52,66 @@ To access downloads from other machines on your network, you can:
 - Use NFS or SMB to share the `TMSN_TORRENTS_DIR` directory
 - Access files directly on the host at the path specified in `.env`
 
+## Accessing Downloads from Other Devices
+
+The setup includes a WebDAV server for easy network file access. WebDAV provides a lightweight, browsable file share that works with most operating systems.
+
+### Connecting from Linux (KDE Dolphin, GNOME Files, etc.)
+
+1. Open your file manager
+2. Connect to server:
+   - **URL**: `webdav://your-server-ip:8080`
+   - **Username**: From `TMSN_USER` in `.env`
+   - **Password**: From `TMSN_PASS` in `.env`
+
+**KDE Dolphin**: Location bar → `webdav://192.168.1.100:8080`
+
+**GNOME Files**: Other Locations → Connect to Server → Enter WebDAV URL
+
+### Connecting from Android
+
+Use a file manager with WebDAV support:
+- **Solid Explorer** (recommended)
+- **Material Files**
+- **FX File Explorer**
+
+Configuration:
+- **Protocol**: WebDAV
+- **Host**: `192.168.1.100` (your server IP)
+- **Port**: `8080`
+- **Path**: `/`
+- **Username/Password**: From your `.env` file
+
+### Connecting from macOS
+
+1. **Finder** → Go → Connect to Server (⌘K)
+2. Enter: `http://your-server-ip:8080`
+3. Authenticate with your credentials
+
+### Why WebDAV?
+
+- **Lightweight**: Minimal CPU/RAM on Raspberry Pi
+- **No kernel modules**: Runs entirely in Docker
+- **Universal**: Native support in most file managers
+- **GUI-friendly**: Full browsing experience for non-technical users
+- **Read-only**: Prevents accidental deletion/modification of downloads
+
+Files are served read-only to prevent accidental changes. To manage downloads, use the Transmission web UI.
+
 ## Access
 
 - **Transmission Web UI**: http://localhost:9091
-  - Login with credentials from `.env` (TRANSMISSION_USER/TRANSMISSION_PASS)
+  - Login with credentials from `.env` (TMSN_USER/TMSN_PASS)
 - **Gluetun Control API**: http://localhost:8000
   - Provides VPN status and port forwarding info
+- **WebDAV File Access**: http://localhost:8080
+  - Browse and download torrented files
+  - Same credentials as Transmission (TMSN_USER/TMSN_PASS)
+  - Read-only access to prevent accidental file modifications
 
-Both services are firewalled to LAN access only. They are not accessible from the VPN's public IP.
+Both Transmission and Gluetun web interfaces are firewalled to LAN access only. They are not accessible from the VPN's public IP.
+
+WebDAV is exposed on your LAN for easy file access from other devices.
 
 ## Network Security
 
