@@ -1,6 +1,6 @@
-# Transmission + ProtonVPN Docker Setup
+# Transmission VPN Stack
 
-Runs Transmission behind ProtonVPN using Gluetun for VPN connectivity. All torrent traffic is routed through the VPN; web interfaces are only accessible from your LAN.
+Transmission torrent client behind ProtonVPN using Gluetun for VPN connectivity, with WebDAV file sharing. Designed for Raspberry Pi, home servers, or desktop deployment.
 
 ## Prerequisites
 
@@ -17,17 +17,17 @@ Runs Transmission behind ProtonVPN using Gluetun for VPN connectivity. All torre
 
 Copy `.env.example` to `.env` and set the following:
 
-```bash
+```ini
 WIREGUARD_PRIVATE_KEY="your_private_key_here"
-SERVER_COUNTRIES="Mexico,Brazil,Switzerland"  # Comma-separated
-SERVER_CITIES=""  # Optional, leave blank for any city
-PUID=1000  # Your user ID (run `id -u`)
-PGID=1000  # Your group ID (run `id -g`)
-TZ=America/New_York
-TMSN_TORRENTS_DIR=/path/to/downloads
-TRANSMISSION_USER=admin
-TRANSMISSION_PASS=your_password
-LOCAL_NETWORK="192.168.1.0/24"  # Your LAN subnet
+SERVER_COUNTRIES="United States,Canada,Mexico"        # Comma-separated
+SERVER_CITIES="Phoenix,San Jose,Vancouver,Queretaro"  # Optional, leave blank for any city
+PUID=1000                                             # Your user ID (run `id -u`)
+PGID=1000                                             # Your group ID (run `id -g`)
+TZ=America/New_York                                   # Used for Logging
+TMSN_TORRENTS_DIR=/path/to/downloads                  # Torrents dir; no split incomplete/complete dirs.
+AUTH_USER=admin                                       # Login details for BOTH transmission Web UI and WebDAV.
+AUTH_PASS=your_password                               # Should be secure, though this is only ever accessed via LAN.
+LOCAL_NETWORK="192.168.1.0/24"                        # Your LAN subnet
 ```
 
 Note: `LOCAL_NETWORK` should match your actual LAN subnet. Check with `ip addr show`.
@@ -40,21 +40,17 @@ docker-compose up -d
 
 ## Configuration
 
-### Download Directory
-
 All downloads go to a single directory specified by `TMSN_TORRENTS_DIR` in `.env`. The setup automatically disables Transmission's incomplete directory feature via the `transmission-settings.sh` script, which runs on container startup.
 
 If you need to customize Transmission settings further, modify `transmission-settings.sh` or edit `/config/settings.json` manually (stop the container first).
 
-### Network Sharing
-
-To access downloads from other machines on your network, you can:
-- Use NFS or SMB to share the `TMSN_TORRENTS_DIR` directory
-- Access files directly on the host at the path specified in `.env`
-
 ## Accessing Downloads from Other Devices
 
-The setup includes a WebDAV server for easy network file access. WebDAV provides a lightweight, browsable file share that works with most operating systems.
+> [!CAUTION]
+>
+> This assumes everyone on your network is chill. It is not very secure and assumes you have the wherewithal to configure your home network securely.
+
+The setup includes a WebDAV server for easy network file access. WebDAV provides a lightweight, browseable file share that works with most operating systems.
 
 ### Connecting from Linux (KDE Dolphin, GNOME Files, etc.)
 
@@ -63,10 +59,6 @@ The setup includes a WebDAV server for easy network file access. WebDAV provides
    - **URL**: `webdav://your-server-ip:8080`
    - **Username**: From `TMSN_USER` in `.env`
    - **Password**: From `TMSN_PASS` in `.env`
-
-**KDE Dolphin**: Location bar → `webdav://192.168.1.100:8080`
-
-**GNOME Files**: Other Locations → Connect to Server → Enter WebDAV URL
 
 ### Connecting from Android
 
@@ -88,30 +80,20 @@ Configuration:
 2. Enter: `http://your-server-ip:8080`
 3. Authenticate with your credentials
 
-### Why WebDAV?
-
-- **Lightweight**: Minimal CPU/RAM on Raspberry Pi
-- **No kernel modules**: Runs entirely in Docker
-- **Universal**: Native support in most file managers
-- **GUI-friendly**: Full browsing experience for non-technical users
-- **Read-only**: Prevents accidental deletion/modification of downloads
-
-Files are served read-only to prevent accidental changes. To manage downloads, use the Transmission web UI.
-
 ## Access
 
 - **Transmission Web UI**: http://localhost:9091
-  - Login with credentials from `.env` (TMSN_USER/TMSN_PASS)
+  - Login with credentials from `.env` (`TMSN_USER`/`TMSN_PASS`)
 - **Gluetun Control API**: http://localhost:8000
   - Provides VPN status and port forwarding info
 - **WebDAV File Access**: http://localhost:8080
   - Browse and download torrented files
-  - Same credentials as Transmission (TMSN_USER/TMSN_PASS)
+  - Same credentials as Transmission (`TMSN_USER`/`TMSN_PASS`)
   - Read-only access to prevent accidental file modifications
 
 Both Transmission and Gluetun web interfaces are firewalled to LAN access only. They are not accessible from the VPN's public IP.
 
-WebDAV is exposed on your LAN for easy file access from other devices.
+WebDAV is exposed on your LAN for easy file access from other devices. WebDAV files are served read-only. To manage downloads, use the Transmission web UI.
 
 ## Network Security
 

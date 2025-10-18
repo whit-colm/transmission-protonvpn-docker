@@ -1,8 +1,8 @@
+name: torrent-stack
+
 services:
   gluetun:
     image: ghcr.io/qdm12/gluetun:latest
-    container_name: gluetun
-    hostname: gluetun
     restart: unless-stopped
     cap_add:
       - NET_ADMIN
@@ -29,13 +29,8 @@ services:
       - ${GLUETUN_CONTROL_PORT:-8000}:8000  # Gluetun Control server
       - "${TSMN_WEBUI_PORT:-9091}:9091"     # Transmission Web UI
 
-    # Gluetun has a built-in healthcheck that verifies VPN connectivity
-    # It queries the internal health server at 127.0.0.1:9999
-    # No custom healthcheck needed - the image defines this automatically
-
   transmission:
     image: linuxserver/transmission
-    container_name: transmission
     restart: unless-stopped
     network_mode: "service:gluetun"  # Forces Transmission to use Gluetun's network stack
 
@@ -57,7 +52,6 @@ services:
       - transmission-config:/config
       - ./transmission-settings.sh:/custom-cont-init.d/transmission-settings.sh:ro
 
-    # ─── Performance Optimization ──────────────────────────────────────
     ulimits:
       nofile:
         soft: 32768
@@ -65,7 +59,6 @@ services:
 
   transmission-port-update:
     image: ghcr.io/jgramling17/transmission-gluetun-port-update:latest
-    container_name: transmission_port_update
     network_mode: service:gluetun
     depends_on:
       gluetun:
