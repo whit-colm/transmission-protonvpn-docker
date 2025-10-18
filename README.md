@@ -1,197 +1,101 @@
-# 🏰️ qBittorrent + ProtonVPN (WireGuard) in Docker (macOS)
+# Transmission + ProtonVPN Docker Setup
 
-**Securely run qBittorrent in Docker with ProtonVPN (WireGuard) using Gluetun, ensuring full VPN routing and automatic port forwarding for improved torrenting performance.**
+Runs Transmission behind ProtonVPN using Gluetun for VPN connectivity. All torrent traffic is routed through the VPN; web interfaces are only accessible from your LAN.
 
-&#x20;
+## Prerequisites
 
----
+- Docker and docker-compose
+- ProtonVPN account with port forwarding support (paid tier required for P2P)
 
-## 📌 Table of Contents
+## Setup
 
-1. [Overview](#overview)
-2. [Features](#features)
-3. [Prerequisites](#prerequisites)
-4. [Installation Guide](#installation-guide)
-   - [Install Docker](#install-docker)
-   - [Clone the Repository](#clone-the-repository)
-   - [Set Up the ](#set-up-the-env-file)[`.env`](#set-up-the-env-file)[ File](#set-up-the-env-file)
-   - [Configure Authentication](#configure-authentication)
-   - [Start the Containers](#start-the-containers)
-5. [Accessing qBittorrent Web UI](#accessing-qbittorrent-web-ui)
-6. [Security & Best Practices](#security--best-practices)
-7. [Troubleshooting](#troubleshooting)
-8. [License](#license)
-9. [Contributing](#contributing)
-10. [Support & Feedback](#support--feedback)
+### 1. Generate WireGuard Credentials
 
----
+[Generate a WireGuard configuration](https://account.proton.me/u/1/vpn/WireGuard) from your ProtonVPN account. Copy the `PrivateKey` value. See [Gluetun's ProtonVPN docs](https://github.com/qdm12/gluetun-wiki/blob/main/setup/providers/protonvpn.md) for details.
 
-## 🔹 Overview
+### 2. Configure Environment
 
-This setup ensures **qBittorrent only connects through ProtonVPN (WireGuard)** using **Gluetun**, preventing leaks and enhancing security.\
-It also **automates port forwarding** for better torrent speeds and **runs everything inside Docker** for easy management.
+Copy `.env.example` to `.env` and set the following:
 
----
-
-## ✅ Features
-
-- **🔒 VPN-Enforced Torrenting** – No leaks, all traffic runs **inside** the VPN.
-- **⚡ Automatic Port Forwarding** – Ensures better speeds and improved peer connections.
-- **🌐 Local Web UI Access** – Easily control torrents via [`http://localhost:8080`](http://localhost:8080).
-- **📺 Fully Containerized** – Uses Docker for easy deployment, updates, and isolation.
-- **🔄 Resilient Setup** – Containers **auto-restart** if anything crashes.
-- Uses **separate storage** for incomplete and completed torrents
-- **Automatically updates containers using Watchtower** 🛠️
-
----
-
-## 🛠️ Prerequisites
-
-- **Docker Desktop** (macOS/Windows/Linux)
-- **Docker Compose** (bundled with Docker Desktop)
-- **ProtonVPN account** (Plus or Visionary required for WireGuard support)
-
----
-
-## 📂 Installation Guide
-
-### **1️⃣ Install Docker**
-
-Download and install **Docker Desktop** from [here](https://www.docker.com/products/docker-desktop/).\
-Ensure Docker is **running** before proceeding.
-
----
-
-### **2️⃣ Clone the Repository**
-
-```sh
-git clone https://github.com/torrentsec/qbittorrent-protonvpn-docker.git
-cd qbittorrent-protonvpn-docker
+```bash
+WIREGUARD_PRIVATE_KEY="your_private_key_here"
+SERVER_COUNTRIES="Mexico,Brazil,Switzerland"  # Comma-separated
+SERVER_CITIES=""  # Optional, leave blank for any city
+PUID=1000  # Your user ID (run `id -u`)
+PGID=1000  # Your group ID (run `id -g`)
+TZ=America/New_York
+TMSN_TORRENTS_DIR=/path/to/downloads
+TRANSMISSION_USER=admin
+TRANSMISSION_PASS=your_password
+LOCAL_NETWORK="192.168.1.0/24"  # Your LAN subnet
 ```
 
----
+Note: `LOCAL_NETWORK` should match your actual LAN subnet. Check with `ip addr show`.
 
-### **3️⃣ Set Up the **`.env`** File**
-
-This project uses an `.env` file to store **sensitive configuration values** (which are ignored by Git for security).
-
-#### **Create Your **`.env`** File**
-
-```sh
-cp .env.example .env
-nano .env
-```
-
-#### **Fill in the Following Variables**
-
-```ini
-WIREGUARD_PRIVATE_KEY=your_private_key_here
-SERVER_COUNTRIES="United Kingdom"
-SERVER_CITIES="London"
-
-PUID=1000
-PGID=1000
-TZ=Europe/London
-
-GLUETUN_USER=your_admin_username
-GLUETUN_PASS=your_admin_password
-
-GSP_GTN_API_KEY=your_random_api_key_here
-GSP_QBITTORRENT_PORT=your_forwarded_port_here
-```
-
-Save and close (`CTRL + X`, then `Y`, then `ENTER`).
-
----
-
-### **4️⃣ Start the Containers**
+### 3. Start Services
 
 ```sh
 docker-compose up -d
 ```
 
-🚀 **qBittorrent is now running securely through ProtonVPN!**
+## Configuration
 
----
+### Download Directory
 
-## 📚 Accessing qBittorrent Web UI
+All downloads go to a single directory specified by `TMSN_TORRENTS_DIR` in `.env`. The setup automatically disables Transmission's incomplete directory feature via the `transmission-settings.sh` script, which runs on container startup.
 
-Once running, open:\
-📌 [**http://localhost:8080**](http://localhost:8080)\
-*(Default username: admin, password: check console for temporarily password)*
+If you need to customize Transmission settings further, modify `transmission-settings.sh` or edit `/config/settings.json` manually (stop the container first).
 
-Make sure to change your web UI password after the first login. Otherwise, the password will be randomly generated after every container restart.
+### Network Sharing
 
----
+To access downloads from other machines on your network, you can:
+- Use NFS or SMB to share the `TMSN_TORRENTS_DIR` directory
+- Access files directly on the host at the path specified in `.env`
 
-## 🛡️ Security & Best Practices
+## Access
 
-1. **Keep **`.env`** Private**
+- **Transmission Web UI**: http://localhost:9091
+  - Login with credentials from `.env` (TRANSMISSION_USER/TRANSMISSION_PASS)
+- **Gluetun Control API**: http://localhost:8000
+  - Provides VPN status and port forwarding info
 
-   - The `.gitignore` file **already prevents **`.env`** from being uploaded to GitHub.**
+Both services are firewalled to LAN access only. They are not accessible from the VPN's public IP.
 
-2. **Use a Strong Password for Gluetun API**
+## Network Security
 
-   - **Modify **`GLUETUN_PASS`** in **`.env` to prevent unauthorized API access.
+The setup uses `network_mode: service:gluetun` for Transmission, forcing all traffic through the VPN. Gluetun's firewall:
+- Blocks all incoming connections from the VPN interface except the forwarded torrent port
+- Allows incoming connections from Docker networks and your LAN subnet (`FIREWALL_OUTBOUND_SUBNETS`)
+- Web interfaces (ports 8000, 9091) are only accessible via localhost or LAN
 
-3. **Verify VPN Connectivity Before Torrenting**
+This means:
+- Web UIs cannot be accessed from the internet via the VPN IP
+- Only authenticated LAN devices can manage the services
+- Torrent traffic uses the VPN's forwarded port
 
-   - Run `curl ifconfig.me` inside the container:
-     ```sh
-     docker exec -it qbittorrent curl ifconfig.me
-     ```
-   - ✅ **If the IP matches ProtonVPN**, it's working.
-   - ❌ **If it shows your real IP, something is wrong.**
+## Troubleshooting
 
----
-
-## 🛠️ Troubleshooting
-
-### **Check if VPN is Running**
-
-```sh
-docker ps
-```
-
-If Gluetun isn’t running, restart everything:
+### Verify VPN Connection
 
 ```sh
-docker-compose down && docker-compose up -d
+# Check logs
+docker logs gluetun
+
+# Verify public IP is VPN (not your real IP)
+docker exec gluetun wget -qO- https://ipinfo.io/ip
+
+# Check forwarded port
+docker exec gluetun cat /tmp/gluetun/forwarded_port
 ```
 
-### **Verify qBittorrent is Using VPN**
+### 403 Forbidden on Web UI
 
-```sh
-docker exec -it qbittorrent curl ifconfig.me
-```
+Do not set `WHITELIST` environment variable in docker-compose.yaml. It conflicts with `network_mode: service:gluetun`. Access control is handled via HTTP authentication.
 
-🟢 If the IP matches ProtonVPN, it’s working.\
-🔴 If it shows your real IP, something is wrong.
+### Port Forwarding
 
-### **Check Logs for Errors**
+ProtonVPN assigns a random port. The `transmission-port-update` container automatically configures Transmission to use this port. Check Transmission's settings or the forwarded port file to verify.
 
-```sh
-docker logs -f gluetun
-```
+### Permission Errors
 
-Look for **AUTH\_FAILED** or connection issues.
-
----
-
-## 💎 License
-
-This project is licensed under the **MIT License** – see the LICENSE file for details.
-
----
-
-## 💪 Contributing
-
-Contributions are welcome! If you have improvements or feedback, feel free to submit an issue or pull request.
-
----
-
-## 💬 Support & Feedback
-
-- If you found this helpful, give it a ⭐ star on GitHub!
-- Feedback & suggestions are always welcome.
-
+Ensure `PUID` and `PGID` in `.env` match your user (`id -u` and `id -g`). The download directory must be writable by this user.

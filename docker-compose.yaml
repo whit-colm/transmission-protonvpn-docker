@@ -1,0 +1,81 @@
+services:
+  gluetun:
+    image: ghcr.io/qdm12/gluetun:latest
+    container_name: gluetun
+    hostname: gluetun
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun  # Enables VPN tunneling inside the container
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1  # Disables IPv6 to prevent leaks
+
+    environment:
+      - VPN_SERVICE_PROVIDER=protonvpn
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}  # Private key for authentication (from .env)
+      - SERVER_COUNTRIES=${SERVER_COUNTRIES}
+      - SERVER_CITIES=${SERVER_CITIES}
+      - PORT_FORWARD_ONLY="on"
+      - VPN_PORT_FORWARDING="on"
+      - TZ=${TZ}  # Sets the timezone for correct timestamps in logs
+      - FIREWALL_OUTBOUND_SUBNETS=${LOCAL_NETWORK}  # Allows LAN access through the VPN
+
+    volumes:
+      - gluetun-config:/gluetun
+
+    ports:
+      - ${GLUETUN_CONTROL_PORT:-8000}:8000  # Gluetun Control server
+      - "${TSMN_WEBUI_PORT:-9091}:9091"     # Transmission Web UI
+
+    # Gluetun has a built-in healthcheck that verifies VPN connectivity
+    # It queries the internal health server at 127.0.0.1:9999
+    # No custom healthcheck needed - the image defines this automatically
+
+  transmission:
+    image: linuxserver/transmission
+    container_name: transmission
+    restart: unless-stopped
+    network_mode: "service:gluetun"  # Forces Transmission to use Gluetun's network stack
+
+    depends_on:
+      gluetun:
+        condition: service_healthy  # Ensures Transmission starts only when the VPN is fully functional
+
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID} 
+      - TZ=${TZ}
+      # WHITELIST removed - causes 403 errors when using network_mode: service:gluetun
+      # Access is controlled via username/password instead
+      - USER=${TMSN_USER}
+      - PASS=${TMSN_PASS}
+
+    volumes:
+      - ${TMSN_TORRENTS_DIR}:/downloads
+      - transmission-config:/config
+      - ./transmission-settings.sh:/custom-cont-init.d/transmission-settings.sh:ro
+
+    # ─── Performance Optimization ──────────────────────────────────────
+    ulimits:
+      nofile:
+        soft: 32768
+        hard: 65536  # Increases allowed open files (important for high-speed torrenting)
+
+  transmission-port-update:
+    image: ghcr.io/jgramling17/transmission-gluetun-port-update:latest
+    container_name: transmission_port_update
+    network_mode: service:gluetun
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    environment:
+      - TRANSMISSION_RPC_PORT=9091
+      - TRANSMISSION_RPC_USERNAME=${TMSN_USER}
+      - TRANSMISSION_RPC_PASSWORD=${TMSN_PASS}
+    restart: "unless-stopped"
+
+volumes:
+  gluetun-config:
+  transmission-config:
