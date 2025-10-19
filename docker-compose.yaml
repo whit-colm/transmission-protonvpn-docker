@@ -53,11 +53,12 @@ services:
       - ./transmission-settings.sh:/custom-cont-init.d/transmission-settings.sh:ro
 
     # Note: ulimits may fail in rootless Docker if your user's ulimit is lower
-    # If you get errors, comment out or adjust these values based on `ulimit -n`
+    # Check your limits with: ulimit -n -S (soft) and ulimit -n -H (hard)
+    # If you get errors, comment out this section or adjust to match your system
     ulimits:
       nofile:
-        soft: 4096   # Conservative default that works with rootless Docker
-        hard: 8192   # Reduced from 65536 for rootless compatibility
+        soft: 1024   # Standard soft limit on most systems
+        hard: 4096   # Conservative hard limit for rootless Docker (tested on RPi4/Alpine)
 
   transmission-port-update:
     image: ghcr.io/jgramling17/transmission-gluetun-port-update:latest

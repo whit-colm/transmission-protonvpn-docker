@@ -9,12 +9,12 @@ Transmission torrent client behind ProtonVPN using Gluetun for VPN connectivity,
 
 ### Rootless Docker Support
 
-This stack now supports rootless Docker! Key considerations:
+This stack has been updated to improve rootless Docker compatibility, but there are important limitations:
 
 - **UID/GID mapping**: In rootless Docker, containers run as your host user automatically. The `PUID` and `PGID` settings still work for the linuxserver/transmission image.
 - **File permissions**: Ensure your `TMSN_TORRENTS_DIR` is writable by your user.
-- **ulimits**: The default ulimits are conservative (4096/8192) to work with rootless Docker. If you need higher limits for heavy torrenting, increase them based on your user's `ulimit -n` value.
-- **VPN capabilities**: Rootless Docker requires additional setup for `/dev/net/tun` and `NET_ADMIN` capability. See [Docker's rootless mode documentation](https://docs.docker.com/engine/security/rootless/) for slirp4netns setup.
+- **ulimits**: The default ulimits (1024/4096) match standard system defaults. Adjust based on your `ulimit -n -S` and `ulimit -n -H` values if needed.
+- **VPN capabilities**: ⚠️ **VPN functionality may not work reliably in rootless Docker** due to `NET_ADMIN` and `/dev/net/tun` requirements. Rootful Docker is recommended if you need VPN features.
 
 ## Setup
 
@@ -153,27 +153,36 @@ Ensure `PUID` and `PGID` in `.env` match your user (`id -u` and `id -g`). The do
 If you see errors like "cannot set ulimit" when starting:
 
 ```sh
-# Check your current limit
-ulimit -n
+# Check your current limits
+ulimit -n -S  # Soft limit (typically 1024)
+ulimit -n -H  # Hard limit (varies by system, e.g., 4096 on RPi4, 524288 on desktop)
 
-# If it's less than 8192, either:
-# 1. Lower the ulimits in docker-compose.yaml to match your limit, or
+# If the values in docker-compose.yaml exceed your limits:
+# 1. Lower the ulimits to match your system's limits, or
 # 2. Comment out the ulimits section entirely (Docker will use defaults)
+# 3. To increase your user's limits, edit /etc/security/limits.conf (requires root)
 ```
 
 ### Rootless Docker: VPN Not Working
 
-Rootless Docker needs special setup for VPN functionality:
+**Important**: VPN containers like Gluetun require `NET_ADMIN` capability and access to `/dev/net/tun`, which have significant limitations in rootless Docker:
 
-1. Install and configure slirp4netns with `--enable-sandbox` flag
-2. Or use the `pasta` network driver (Docker 24.0+)
-3. See [Docker's rootless documentation](https://docs.docker.com/engine/security/rootless/#networking) for detailed setup
+- Rootless Docker cannot grant `NET_ADMIN` capability without additional system configuration
+- `/dev/net/tun` access requires the device to be available in the user namespace
+- Most VPN containers are designed for rootful Docker
+
+**Possible workarounds** (advanced setup required):
+1. Configure your system to allow rootless containers to access `/dev/net/tun`
+2. Use `--device-cgroup-rule` with proper permissions
+3. Consider using rootful Docker for VPN containers (more straightforward)
 
 If VPN still fails, check:
 ```sh
-# Verify slirp4netns is installed
-which slirp4netns
-
-# Check Docker rootless setup
+# Verify your rootless Docker setup
 systemctl --user status docker
+
+# Check if you can access /dev/net/tun
+ls -l /dev/net/tun
 ```
+
+**Note**: This stack may have fundamental compatibility issues with rootless Docker when VPN functionality is required. If you encounter persistent VPN issues, rootful Docker is recommended for this use case.
