@@ -1,5 +1,12 @@
 # Transmission VPN Stack
 
+> [!INFO]
+>
+> While it is best practice to run Docker in rootless mode, the containers in use here require access to host root resources (mainly setting `NET_ADMIN` in the gluetun container) and may not run in rootless mode[^1].
+>
+> [^1]: See #2, #3 for further information.
+
+
 Transmission torrent client behind ProtonVPN using Gluetun for VPN connectivity, with WebDAV file sharing. Designed for Raspberry Pi, home servers, or desktop deployment.
 
 ## Prerequisites
@@ -57,8 +64,8 @@ The setup includes a WebDAV server for easy network file access. WebDAV provides
 1. Open your file manager
 2. Connect to server:
    - **URL**: `webdav://your-server-ip:8080`
-   - **Username**: From `TMSN_USER` in `.env`
-   - **Password**: From `TMSN_PASS` in `.env`
+   - **Username**: From `AUTH_USER` in `.env`
+   - **Password**: From `AUTH_PASS` in `.env`
 
 ### Connecting from Android
 
@@ -83,12 +90,12 @@ Configuration:
 ## Access
 
 - **Transmission Web UI**: http://localhost:9091
-  - Login with credentials from `.env` (`TMSN_USER`/`TMSN_PASS`)
+  - Login with credentials from `.env` (`AUTH_USER`/`AUTH_PASS`)
 - **Gluetun Control API**: http://localhost:8000
   - Provides VPN status and port forwarding info
 - **WebDAV File Access**: http://localhost:8080
   - Browse and download torrented files
-  - Same credentials as Transmission (`TMSN_USER`/`TMSN_PASS`)
+  - Same credentials as Transmission (`AUTH_USER`/`AUTH_PASS`)
   - Read-only access to prevent accidental file modifications
 
 Both Transmission and Gluetun web interfaces are firewalled to LAN access only. They are not accessible from the VPN's public IP.
