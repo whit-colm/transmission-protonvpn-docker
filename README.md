@@ -65,7 +65,8 @@ The setup includes a WebDAV server for easy network file access. WebDAV provides
 
 1. Open your file manager
 2. Connect to server:
-   - **URL**: `webdav://your-server-ip:8080`
+   - **URL**: `webdav://your-server-ip:${WEBDAV_PORT}$`
+    - For KDE Dolphin the URL should be `webdav://${AUTH_USER}@your-server-ip:${WEBDAV_PORT}$`
    - **Username**: From `AUTH_USER` in `.env`
    - **Password**: From `AUTH_PASS` in `.env`
 
