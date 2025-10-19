@@ -52,14 +52,17 @@ services:
       - transmission-config:/config
       - ./transmission-settings.sh:/custom-cont-init.d/transmission-settings.sh:ro
 
+    # Adjusts file descriptor limits for better performance with many torrents
+    # note that this may have to be adjusted based on your host system limits.
     ulimits:
       nofile:
-        soft: 32768
-        hard: 65536  # Increases allowed open files (important for high-speed torrenting)
+        soft: 4096
+        hard: 8192
 
   transmission-port-update:
     image: ghcr.io/jgramling17/transmission-gluetun-port-update:latest
     network_mode: service:gluetun
+    user: ${PUID}:${PGID}
     depends_on:
       gluetun:
         condition: service_healthy
