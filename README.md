@@ -4,8 +4,17 @@ Transmission torrent client behind ProtonVPN using Gluetun for VPN connectivity,
 
 ## Prerequisites
 
-- Docker and docker-compose
+- Docker and docker-compose (works with both rootful and rootless Docker)
 - ProtonVPN account with port forwarding support (paid tier required for P2P)
+
+### Rootless Docker Support
+
+This stack now supports rootless Docker! Key considerations:
+
+- **UID/GID mapping**: In rootless Docker, containers run as your host user automatically. The `PUID` and `PGID` settings still work for the linuxserver/transmission image.
+- **File permissions**: Ensure your `TMSN_TORRENTS_DIR` is writable by your user.
+- **ulimits**: The default ulimits are conservative (4096/8192) to work with rootless Docker. If you need higher limits for heavy torrenting, increase them based on your user's `ulimit -n` value.
+- **VPN capabilities**: Rootless Docker requires additional setup for `/dev/net/tun` and `NET_ADMIN` capability. See [Docker's rootless mode documentation](https://docs.docker.com/engine/security/rootless/) for slirp4netns setup.
 
 ## Setup
 
@@ -23,6 +32,7 @@ SERVER_COUNTRIES="United States,Canada,Mexico"        # Comma-separated
 SERVER_CITIES="Phoenix,San Jose,Vancouver,Queretaro"  # Optional, leave blank for any city
 PUID=1000                                             # Your user ID (run `id -u`)
 PGID=1000                                             # Your group ID (run `id -g`)
+                                                      # Note: Rootless Docker runs as your user automatically
 TZ=America/New_York                                   # Used for Logging
 TMSN_TORRENTS_DIR=/path/to/downloads                  # Torrents dir; no split incomplete/complete dirs.
 AUTH_USER=admin                                       # Login details for BOTH transmission Web UI and WebDAV.
@@ -133,3 +143,37 @@ ProtonVPN assigns a random port. The `transmission-port-update` container automa
 ### Permission Errors
 
 Ensure `PUID` and `PGID` in `.env` match your user (`id -u` and `id -g`). The download directory must be writable by this user.
+
+**Rootless Docker specific**: If WebDAV isn't working, verify:
+1. Your user has read access to `TMSN_TORRENTS_DIR`
+2. The directory exists and has proper permissions: `chmod 755 /path/to/downloads`
+
+### Rootless Docker: ulimit Errors
+
+If you see errors like "cannot set ulimit" when starting:
+
+```sh
+# Check your current limit
+ulimit -n
+
+# If it's less than 8192, either:
+# 1. Lower the ulimits in docker-compose.yaml to match your limit, or
+# 2. Comment out the ulimits section entirely (Docker will use defaults)
+```
+
+### Rootless Docker: VPN Not Working
+
+Rootless Docker needs special setup for VPN functionality:
+
+1. Install and configure slirp4netns with `--enable-sandbox` flag
+2. Or use the `pasta` network driver (Docker 24.0+)
+3. See [Docker's rootless documentation](https://docs.docker.com/engine/security/rootless/#networking) for detailed setup
+
+If VPN still fails, check:
+```sh
+# Verify slirp4netns is installed
+which slirp4netns
+
+# Check Docker rootless setup
+systemctl --user status docker
+```

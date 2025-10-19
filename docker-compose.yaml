@@ -52,10 +52,12 @@ services:
       - transmission-config:/config
       - ./transmission-settings.sh:/custom-cont-init.d/transmission-settings.sh:ro
 
+    # Note: ulimits may fail in rootless Docker if your user's ulimit is lower
+    # If you get errors, comment out or adjust these values based on `ulimit -n`
     ulimits:
       nofile:
-        soft: 32768
-        hard: 65536  # Increases allowed open files (important for high-speed torrenting)
+        soft: 4096   # Conservative default that works with rootless Docker
+        hard: 8192   # Reduced from 65536 for rootless compatibility
 
   transmission-port-update:
     image: ghcr.io/jgramling17/transmission-gluetun-port-update:latest
@@ -72,7 +74,9 @@ services:
   webdav:
     image: hacdias/webdav:latest
     restart: unless-stopped
-    user: ${PUID}:${PGID}
+    # Note: user directive removed for rootless Docker compatibility
+    # In rootless Docker, the container runs as your user by default
+    # For rootful Docker, use PUID/PGID or chown the TMSN_TORRENTS_DIR appropriately
     ports:
       - "${WEBDAV_PORT:-8080}:8080"
     volumes:
