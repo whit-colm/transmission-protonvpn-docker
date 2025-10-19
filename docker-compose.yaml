@@ -60,7 +60,7 @@ services:
         hard: 8192
 
   transmission-port-update:
-    image: ghcr.io/jgramling17/transmission-gluetun-port-update:latest
+    image: ghcr.io/whit-colm/transmission-gluetun-port-update:latest
     network_mode: service:gluetun
     user: ${PUID}:${PGID}
     depends_on:
