@@ -40,7 +40,7 @@ services:
 
     environment:
       - PUID=${PUID}
-      - PGID=${PGID} 
+      - PGID=${PGID}
       - TZ=${TZ}
       # WHITELIST removed - causes 403 errors when using network_mode: service:gluetun
       # Access is controlled via username/password instead
@@ -71,8 +71,8 @@ services:
 
   webdav:
     image: hacdias/webdav:latest
-    container_name: webdav
     restart: unless-stopped
+    user: ${PUID}:${PGID}
     ports:
       - "${WEBDAV_PORT:-8080}:8080"
     volumes:
@@ -81,7 +81,6 @@ services:
     environment:
       - USERNAME=${TMSN_USER}
       - PASSWORD=${TMSN_PASS}
-    user: "${PUID}:${PGID}"
     command: --config /config.yml
 
 volumes:
