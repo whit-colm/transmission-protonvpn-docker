@@ -1,5 +1,12 @@
 # Transmission VPN Stack
 
+> [!INFO]
+>
+> While it is best practice to run Docker in rootless mode, the containers in use here require access to host root resources (mainly setting `NET_ADMIN` in the gluetun container) and may not run in rootless mode[^1].
+>
+> [^1]: See #2, #3 for further information.
+
+
 Transmission torrent client behind ProtonVPN using Gluetun for VPN connectivity, with WebDAV file sharing. Designed for Raspberry Pi, home servers, or desktop deployment.
 
 ## Prerequisites
@@ -24,7 +31,9 @@ SERVER_CITIES="Phoenix,San Jose,Vancouver,Queretaro"  # Optional, leave blank fo
 PUID=1000                                             # Your user ID (run `id -u`)
 PGID=1000                                             # Your group ID (run `id -g`)
 TZ=America/New_York                                   # Used for Logging
-TMSN_TORRENTS_DIR=/path/to/downloads                  # Torrents dir; no split incomplete/complete dirs.
+DOWNLOADS_DIR=/path/to/downloads                      # Torrents dir; no split incomplete/complete dirs.
+ULIMIT_OFILE_SOFT=32768                               # Set ulimits relevant to your system specs.
+ULIMIT_OFILE_HARD=65536
 AUTH_USER=admin                                       # Login details for BOTH transmission Web UI and WebDAV.
 AUTH_PASS=your_password                               # Should be secure, though this is only ever accessed via LAN.
 LOCAL_NETWORK="192.168.1.0/24"                        # Your LAN subnet
@@ -40,7 +49,7 @@ docker-compose up -d
 
 ## Configuration
 
-All downloads go to a single directory specified by `TMSN_TORRENTS_DIR` in `.env`. The setup automatically disables Transmission's incomplete directory feature via the `transmission-settings.sh` script, which runs on container startup.
+All downloads go to a single directory specified by `DOWNLOADS_DIR` in `.env`. The setup automatically disables Transmission's incomplete directory feature via the `transmission-settings.sh` script, which runs on container startup.
 
 If you need to customize Transmission settings further, modify `transmission-settings.sh` or edit `/config/settings.json` manually (stop the container first).
 
@@ -57,8 +66,8 @@ The setup includes a WebDAV server for easy network file access. WebDAV provides
 1. Open your file manager
 2. Connect to server:
    - **URL**: `webdav://your-server-ip:8080`
-   - **Username**: From `TMSN_USER` in `.env`
-   - **Password**: From `TMSN_PASS` in `.env`
+   - **Username**: From `AUTH_USER` in `.env`
+   - **Password**: From `AUTH_PASS` in `.env`
 
 ### Connecting from Android
 
@@ -83,12 +92,12 @@ Configuration:
 ## Access
 
 - **Transmission Web UI**: http://localhost:9091
-  - Login with credentials from `.env` (`TMSN_USER`/`TMSN_PASS`)
+  - Login with credentials from `.env` (`AUTH_USER`/`AUTH_PASS`)
 - **Gluetun Control API**: http://localhost:8000
   - Provides VPN status and port forwarding info
 - **WebDAV File Access**: http://localhost:8080
   - Browse and download torrented files
-  - Same credentials as Transmission (`TMSN_USER`/`TMSN_PASS`)
+  - Same credentials as Transmission (`AUTH_USER`/`AUTH_PASS`)
   - Read-only access to prevent accidental file modifications
 
 Both Transmission and Gluetun web interfaces are firewalled to LAN access only. They are not accessible from the VPN's public IP.

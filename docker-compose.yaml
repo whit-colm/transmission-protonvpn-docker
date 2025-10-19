@@ -42,31 +42,32 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
-      # WHITELIST removed - causes 403 errors when using network_mode: service:gluetun
-      # Access is controlled via username/password instead
-      - USER=${TMSN_USER}
-      - PASS=${TMSN_PASS}
+      - USER=${AUTH_USER}
+      - PASS=${AUTH_PASS}
 
     volumes:
-      - ${TMSN_TORRENTS_DIR}:/downloads
+      - ${DOWNLOADS_DIR}:/downloads
       - transmission-config:/config
       - ./transmission-settings.sh:/custom-cont-init.d/transmission-settings.sh:ro
 
+    # Adjusts file descriptor limits for better performance with many torrents
+    # note that this may have to be adjusted based on your host system limits.
     ulimits:
       nofile:
-        soft: 32768
-        hard: 65536  # Increases allowed open files (important for high-speed torrenting)
+        soft: ${ULIMIT_OFILE_SOFT:-4096}
+        hard: ${ULIMIT_OFILE_HARD:-8192}
 
   transmission-port-update:
-    image: ghcr.io/jgramling17/transmission-gluetun-port-update:latest
+    image: ghcr.io/whit-colm/transmission-gluetun-port-update:latest
     network_mode: service:gluetun
+    user: ${PUID}:${PGID}
     depends_on:
       gluetun:
         condition: service_healthy
     environment:
       - TRANSMISSION_RPC_PORT=9091
-      - TRANSMISSION_RPC_USERNAME=${TMSN_USER}
-      - TRANSMISSION_RPC_PASSWORD=${TMSN_PASS}
+      - TRANSMISSION_RPC_USERNAME=${AUTH_USER}
+      - TRANSMISSION_RPC_PASSWORD=${AUTH_PASS}
     restart: "unless-stopped"
 
   webdav:
@@ -76,11 +77,11 @@ services:
     ports:
       - "${WEBDAV_PORT:-8080}:8080"
     volumes:
-      - ${TMSN_TORRENTS_DIR}:/data:ro
+      - ${DOWNLOADS_DIR}:/data:ro
       - ./webdav-config.yml:/config.yml:ro
     environment:
-      - USERNAME=${TMSN_USER}
-      - PASSWORD=${TMSN_PASS}
+      - USERNAME=${AUTH_USER}
+      - PASSWORD=${AUTH_PASS}
     command: --config /config.yml
 
 volumes:
