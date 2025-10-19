@@ -54,8 +54,8 @@ services:
     # note that this may have to be adjusted based on your host system limits.
     ulimits:
       nofile:
-        soft: 4096
-        hard: 8192
+        soft: ${ULIMIT_OFILE_SOFT:-4096}
+        hard: ${ULIMIT_OFILE_HARD:-8192}
 
   transmission-port-update:
     image: ghcr.io/whit-colm/transmission-gluetun-port-update:latest

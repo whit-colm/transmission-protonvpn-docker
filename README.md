@@ -31,7 +31,9 @@ SERVER_CITIES="Phoenix,San Jose,Vancouver,Queretaro"  # Optional, leave blank fo
 PUID=1000                                             # Your user ID (run `id -u`)
 PGID=1000                                             # Your group ID (run `id -g`)
 TZ=America/New_York                                   # Used for Logging
-TMSN_TORRENTS_DIR=/path/to/downloads                  # Torrents dir; no split incomplete/complete dirs.
+DOWNLOADS_DIR=/path/to/downloads                      # Torrents dir; no split incomplete/complete dirs.
+ULIMIT_OFILE_SOFT=32768                               # Set ulimits relevant to your system specs.
+ULIMIT_OFILE_HARD=65536
 AUTH_USER=admin                                       # Login details for BOTH transmission Web UI and WebDAV.
 AUTH_PASS=your_password                               # Should be secure, though this is only ever accessed via LAN.
 LOCAL_NETWORK="192.168.1.0/24"                        # Your LAN subnet
@@ -47,7 +49,7 @@ docker-compose up -d
 
 ## Configuration
 
-All downloads go to a single directory specified by `TMSN_TORRENTS_DIR` in `.env`. The setup automatically disables Transmission's incomplete directory feature via the `transmission-settings.sh` script, which runs on container startup.
+All downloads go to a single directory specified by `DOWNLOADS_DIR` in `.env`. The setup automatically disables Transmission's incomplete directory feature via the `transmission-settings.sh` script, which runs on container startup.
 
 If you need to customize Transmission settings further, modify `transmission-settings.sh` or edit `/config/settings.json` manually (stop the container first).
 
