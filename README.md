@@ -1,7 +1,6 @@
 # Transmission+VPN Stack
 
-> [!INFO]
->
+> [!NOTE]
 > While it is best practice to run Docker in rootless mode, the containers in use here require access to host root resources (mainly setting `NET_ADMIN` in the gluetun container) and may not run in rootless mode[^1].
 >
 > [^1]: See #2, #3 for further information.
