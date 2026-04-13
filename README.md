@@ -1,4 +1,4 @@
-# Transmission VPN Stack
+# Transmission+VPN Stack
 
 > [!INFO]
 >
@@ -26,17 +26,17 @@ Copy `.env.example` to `.env` and set the following:
 
 ```ini
 WIREGUARD_PRIVATE_KEY="your_private_key_here"
-SERVER_COUNTRIES="United States,Canada,Mexico"        # Comma-separated
-SERVER_CITIES="Phoenix,San Jose,Vancouver,Queretaro"  # Optional, leave blank for any city
-PUID=1000                                             # Your user ID (run `id -u`)
-PGID=1000                                             # Your group ID (run `id -g`)
-TZ=America/New_York                                   # Used for Logging
-DOWNLOADS_DIR=/path/to/downloads                      # Torrents dir; no split incomplete/complete dirs.
-ULIMIT_OFILE_SOFT=32768                               # Set ulimits relevant to your system specs.
+SERVER_COUNTRIES="United States,Canada,Mexico"
+SERVER_CITIES="Phoenix,San Jose,Vancouver"     # Optional, leave blank for any city
+PUID=1000                                      # User ID for ownership of downlaods (run `id -u`)
+PGID=1000                                      # File group ID (run `id -g`)
+TZ=America/New_York                            # Used for Logging
+DOWNLOADS_DIR=/path/to/downloads               # Torrents dir; no split incomplete/complete dirs.
+ULIMIT_OFILE_SOFT=32768                        # Set ulimits relevant to your system specs.
 ULIMIT_OFILE_HARD=65536
-AUTH_USER=admin                                       # Login details for BOTH transmission Web UI and WebDAV.
-AUTH_PASS=your_password                               # Should be secure, though this is only ever accessed via LAN.
-LOCAL_NETWORK="192.168.1.0/24"                        # Your LAN subnet
+AUTH_USER=admin                                # Login details for BOTH transmission Web UI and WebDAV.
+AUTH_PASS=your_password                        # Should be secure, though this is only ever accessed via LAN.
+LOCAL_NETWORK="192.168.1.0/24"                 # Your LAN subnet
 ```
 
 Note: `LOCAL_NETWORK` should match your actual LAN subnet. Check with `ip addr show`.
@@ -65,7 +65,7 @@ The setup includes a WebDAV server for easy network file access. WebDAV provides
 
 1. Open your file manager
 2. Connect to server:
-   - **URL**: `webdav://your-server-ip:${WEBDAV_PORT}$`
+   - **URL**: `webdav://your-server-ip:${WEBDAV_PORT}`
     - For KDE Dolphin the URL should be `webdav://${AUTH_USER}@your-server-ip:${WEBDAV_PORT}$`
    - **Username**: From `AUTH_USER` in `.env`
    - **Password**: From `AUTH_PASS` in `.env`
@@ -79,7 +79,7 @@ Use a file manager with WebDAV support:
 
 Configuration:
 - **Protocol**: WebDAV
-- **Host**: `192.168.1.100` (your server IP)
+- **Host**: `your-server-ip`
 - **Port**: `8080`
 - **Path**: `/`
 - **Username/Password**: From your `.env` file
@@ -92,11 +92,11 @@ Configuration:
 
 ## Access
 
-- **Transmission Web UI**: http://localhost:9091
+- **Transmission Web UI**: http://your-server-ip:9091
   - Login with credentials from `.env` (`AUTH_USER`/`AUTH_PASS`)
-- **Gluetun Control API**: http://localhost:8000
+- **Gluetun Control API**: http://your-server-ip:8000
   - Provides VPN status and port forwarding info
-- **WebDAV File Access**: http://localhost:8080
+- **WebDAV File Access**: http://your-server-ip:8080
   - Browse and download torrented files
   - Same credentials as Transmission (`AUTH_USER`/`AUTH_PASS`)
   - Read-only access to prevent accidental file modifications
